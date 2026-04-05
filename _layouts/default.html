@@ -5,17 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ page.title }} | MWC PWA</title>
   
-  <!-- PWA -->
   <link rel="manifest" href="{{ '/manifest.json' | relative_url }}">
   <meta name="theme-color" content="#6750a4">
 
-  <!-- Fonts & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   
   <!-- MWC Components via CDN -->
   <script type="module">
     import 'https://esm.run/@material/web/all.js';
+    // MWCの読み込みが終わったらスプラッシュを消す
+    window.addEventListener('load', () => {
+      const splash = document.getElementById('splash-screen');
+      splash.style.opacity = '0';
+      setTimeout(() => splash.remove(), 500);
+      document.body.classList.remove('loading');
+    });
   </script>
 
   <style>
@@ -23,6 +28,7 @@
       --md-sys-color-primary: #6750a4;
       --md-sys-typography-font-family: 'Roboto', sans-serif;
     }
+
     body {
       margin: 0;
       font-family: var(--md-sys-typography-font-family);
@@ -32,6 +38,39 @@
       height: 100vh;
       overflow: hidden;
     }
+
+    /* MWCの読み込みが終わるまで全体を隠すためのクラス */
+    body.loading md-tabs, body.loading md-icon-button, body.loading md-filled-button {
+      visibility: hidden;
+    }
+
+    /* Splash Screen (X-style) */
+    #splash-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #6750a4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+
+    #splash-screen .logo {
+      color: white;
+      font-size: 64px;
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
     header {
       display: flex;
       align-items: center;
@@ -40,45 +79,47 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       z-index: 10;
     }
+
     header h1 {
       flex-grow: 1;
       font-size: 1.1rem;
       margin: 0 16px;
       font-weight: 500;
     }
-    /* SPA Transition Target */
+
     #app-shell {
       flex-grow: 1;
       overflow-y: auto;
       padding: 16px;
       transition: opacity 0.2s ease-in-out;
     }
+
     .fade-out { opacity: 0; }
+
     nav {
       background: #f3edf7;
       border-top: 1px solid #eaddff;
+      height: 80px; /* タブの高さを固定 */
     }
+
     .page-container {
       max-width: 600px;
       margin: 0 auto;
     }
-    /* Loading Indicator */
-    #loading-bar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      display: none;
-    }
   </style>
 </head>
-<body>
+<body class="loading">
 
-  <md-linear-progress id="loading-bar" indeterminate></md-linear-progress>
+  <!-- Splash Screen -->
+  <div id="splash-screen">
+    <div class="logo">
+      <span class="material-icons" style="font-size: 80px;">auto_awesome</span>
+    </div>
+  </div>
 
   <header>
     <md-icon-button><md-icon>menu</md-icon></md-icon-button>
-    <h1>{{ site.title | default: "MWC App" }}</h1>
+    <h1>MWC-PWA-Jekyll</h1>
     <md-filled-icon-button><md-icon>account_circle</md-icon></md-filled-icon-button>
   </header>
 
@@ -90,10 +131,10 @@
 
   <nav>
     <md-tabs id="bottom-nav">
-      <md-primary-tab id="nav-home" data-path="{{ '/' | relative_url }}" aria-label="Home">
+      <md-primary-tab id="nav-home" data-path="{{ '/' | relative_url }}">
         <md-icon slot="icon">home</md-icon>Home
       </md-primary-tab>
-      <md-primary-tab id="nav-settings" data-path="{{ '/settings.html' | relative_url }}" aria-label="Settings">
+      <md-primary-tab id="nav-settings" data-path="{{ '/settings.html' | relative_url }}">
         <md-icon slot="icon">settings</md-icon>Settings
       </md-primary-tab>
     </md-tabs>
@@ -102,70 +143,42 @@
   <script>
     const shell = document.getElementById('app-shell');
     const tabs = document.getElementById('bottom-nav');
-    const loading = document.getElementById('loading-bar');
 
-    // SPA Logic to prevent white-out
     async function loadPage(url, push = true) {
-      loading.style.display = 'block';
       shell.classList.add('fade-out');
-      
       try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Network error');
-        
         const text = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(text, 'text/html');
-        
-        // Extract content and title from fetched page
         const newShell = doc.querySelector('#app-shell');
-        const newTitle = doc.querySelector('title');
-
         if (newShell) {
           setTimeout(() => {
             shell.innerHTML = newShell.innerHTML;
-            if (newTitle) document.title = newTitle.innerText;
             shell.classList.remove('fade-out');
-            loading.style.display = 'none';
             if (push) history.pushState({ url }, '', url);
             updateTabState(url);
-            // Re-run inline scripts if needed
-            shell.querySelectorAll('script').forEach(oldScript => {
-              const newScript = document.createElement('script');
-              newScript.textContent = oldScript.textContent;
-              document.body.appendChild(newScript).parentNode.removeChild(newScript);
-            });
-          }, 250);
+          }, 200);
         }
-      } catch (e) {
-        console.error('Fetch failed, falling back to full load', e);
-        window.location.href = url;
-      }
+      } catch (e) { window.location.href = url; }
     }
 
     function updateTabState(url) {
       const path = new URL(url, window.location.origin).pathname;
-      if (path.includes('settings.html')) tabs.activeTabIndex = 1;
-      else tabs.activeTabIndex = 0;
+      tabs.activeTabIndex = path.includes('settings.html') ? 1 : 0;
     }
 
     tabs.addEventListener('change', (e) => {
       const path = e.target.activeTab.dataset.path;
-      if (window.location.pathname !== path && !window.location.pathname.endsWith(path)) {
-        loadPage(path);
-      }
+      if (!window.location.pathname.endsWith(path)) loadPage(path);
     });
 
     window.addEventListener('popstate', (e) => {
-      if (e.state && e.state.url) loadPage(e.state.url, false);
+      if (e.state?.url) loadPage(e.state.url, false);
     });
 
-    // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register("{{ '/sw.js' | relative_url }}")
-          .catch(err => console.log('SW registration failed:', err));
-      });
+      navigator.serviceWorker.register("{{ '/sw.js' | relative_url }}");
     }
   </script>
 </body>
