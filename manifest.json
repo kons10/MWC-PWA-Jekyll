@@ -1,0 +1,17 @@
+{
+  "name": "MWC Jekyll SPA",
+  "short_name": "MWC-SPA",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fef7ff",
+  "theme_color": "#6750a4",
+  "icons": [
+    {
+      "src": "https://fonts.gstatic.com/s/i/short-term/release/googlestars/home/v4/512px.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
