@@ -1,17 +1,23 @@
 {
-  "name": "MWC Jekyll SPA",
+  "name": "MWC Jekyll PWA",
   "short_name": "MWC-SPA",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#fef7ff",
+  "background_color": "#6750a4",
   "theme_color": "#6750a4",
+  "description": "JekyllとMWCで作ったSPA風PWA",
   "icons": [
     {
       "src": "https://fonts.gstatic.com/s/i/short-term/release/googlestars/home/v4/512px.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "https://fonts.gstatic.com/s/i/short-term/release/googlestars/home/v4/512px.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
-
