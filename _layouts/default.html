@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ page.title }} | MWC PWA</title>
-  
+
   <link rel="manifest" href="{{ '/manifest.json' | relative_url }}">
   <meta name="theme-color" content="#6750a4">
 
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="preload" onload="this.onload=null;this.rel='stylesheet'" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
-  
-  <!-- MWC Components via CDN -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
   <script type="module">
     import 'https://esm.run/@material/web/all.js';
-    // MWCの読み込みが終わったらスプラッシュを消す
+
+    // 初回読み込み完了時の処理
     window.addEventListener('load', () => {
       const splash = document.getElementById('splash-screen');
-      splash.style.opacity = '0';
-      setTimeout(() => splash.remove(), 500);
-      document.body.classList.remove('loading');
+      if (splash) {
+        splash.style.opacity = '0';
+        setTimeout(() => splash.remove(), 500);
+      }
+      document.body.classList.remove('is-loading-mwc');
     });
   </script>
 
@@ -39,12 +42,14 @@
       overflow: hidden;
     }
 
-    /* MWCの読み込みが終わるまで全体を隠すためのクラス */
-    body.loading md-tabs, body.loading md-icon-button, body.loading md-filled-button {
+    /* ハイドレーション待ちの制御 */
+    .is-loading-mwc md-tabs,
+    .is-loading-mwc md-icon-button,
+    .is-loading-mwc md-circular-progress {
       visibility: hidden;
     }
 
-    /* Splash Screen (X-style) */
+    /* 起動画面 (X風スプラッシュ) */
     #splash-screen {
       position: fixed;
       top: 0;
@@ -55,19 +60,42 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 9999;
+      z-index: 10000;
       transition: opacity 0.5s ease;
     }
 
-    #splash-screen .logo {
+    .splash-logo {
       color: white;
-      font-size: 64px;
+      font-size: 80px;
+      animation: pulse 1.5s infinite ease-in-out;
     }
 
     @keyframes pulse {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.1); opacity: 0.8; }
-      100% { transform: scale(1); opacity: 1; }
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.1);
+      }
+    }
+
+    /* ページ遷移用ローディング画面 */
+    #page-loader {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      /* 通常は非表示 */
+      justify-content: center;
+      align-items: center;
+      background: rgba(254, 247, 255, 0.7);
+      z-index: 50;
+      backdrop-filter: blur(4px);
     }
 
     header {
@@ -75,7 +103,7 @@
       align-items: center;
       padding: 8px 16px;
       background: #fff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       z-index: 10;
     }
 
@@ -87,16 +115,23 @@
     }
 
     #app-shell {
+      position: relative;
       flex-grow: 1;
       overflow-y: auto;
       padding: 16px;
-      transition: opacity 0.2s ease-in-out;
+      transition: filter 0.3s ease;
     }
 
-    .fade-out { opacity: 0; }
+    /* 読み込み中は中身を少しぼかす */
+    .navigating #app-shell-content {
+      filter: blur(2px);
+      opacity: 0.5;
+    }
 
     nav {
       background: #f3edf7;
+      border-top: 1px solid #eaddff;
+      height: 80px;
     }
 
     .page-container {
@@ -105,13 +140,12 @@
     }
   </style>
 </head>
-<body class="loading">
 
-  <!-- Splash Screen -->
+<body class="is-loading-mwc">
+
+  <!-- 起動画面 -->
   <div id="splash-screen">
-    <div class="logo">
-      <md-circular-progress indeterminate></md-circular-progress>
-    </div>
+    <span class="material-icons splash-logo">auto_awesome</span>
   </div>
 
   <header>
@@ -121,14 +155,19 @@
   </header>
 
   <main id="app-shell">
-    <div class="page-container">
+    <!-- ローディングぐるぐる -->
+    <div id="page-loader">
+      <md-circular-progress four-color indeterminate></md-circular-progress>
+    </div>
+
+    <div id="app-shell-content" class="page-container">
       {{ content }}
     </div>
   </main>
 
   <nav>
     <md-tabs id="bottom-nav">
-      <md-primary-tab id="nav-home" data-path="{{ '/' | relative_url }}">
+      <md-primary-tab id="nav-home" data-path="{{ '/index.html' | relative_url }}">
         <md-icon slot="icon">home</md-icon>Home
       </md-primary-tab>
       <md-primary-tab id="nav-settings" data-path="{{ '/settings.html' | relative_url }}">
@@ -139,25 +178,51 @@
 
   <script>
     const shell = document.getElementById('app-shell');
+    const content = document.getElementById('app-shell-content');
+    const loader = document.getElementById('page-loader');
     const tabs = document.getElementById('bottom-nav');
 
     async function loadPage(url, push = true) {
-      shell.classList.add('fade-out');
+      // 読み込み中状態にする
+      document.body.classList.add('navigating');
+      loader.style.display = 'flex';
+
       try {
         const response = await fetch(url);
         const text = await response.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(text, 'text/html');
-        const newShell = doc.querySelector('#app-shell');
-        if (newShell) {
-          setTimeout(() => {
-            shell.innerHTML = newShell.innerHTML;
-            shell.classList.remove('fade-out');
-            if (push) history.pushState({ url }, '', url);
-            updateTabState(url);
-          }, 200);
+
+        // 新しいページから中身を抽出
+        const newContent = doc.querySelector('#app-shell-content');
+        const newTitle = doc.querySelector('title');
+
+        // 通信時間をシミュレートして「ぐるぐる」をしっかり見せる場合はここを調整
+        // 今回は完了次第すぐに表示
+        if (newContent) {
+          content.innerHTML = newContent.innerHTML;
+          if (newTitle) document.title = newTitle.innerText;
+
+          if (push) history.pushState({ url }, '', url);
+          updateTabState(url);
+
+          // インラインスクリプトの再実行
+          content.querySelectorAll('script').forEach(oldScript => {
+            const newScript = document.createElement('script');
+            newScript.textContent = oldScript.textContent;
+            document.body.appendChild(newScript).parentNode.removeChild(newScript);
+          });
         }
-      } catch (e) { window.location.href = url; }
+      } catch (e) {
+        console.error("Navigation Error:", e);
+        window.location.href = url; // 失敗時は強制リロード
+      } finally {
+        // 読み込み完了
+        setTimeout(() => {
+          loader.style.display = 'none';
+          document.body.classList.remove('navigating');
+        }, 100);
+      }
     }
 
     function updateTabState(url) {
@@ -167,11 +232,14 @@
 
     tabs.addEventListener('change', (e) => {
       const path = e.target.activeTab.dataset.path;
-      if (!window.location.pathname.endsWith(path)) loadPage(path);
+      // 現在のページと違う場合のみ遷移
+      if (!window.location.pathname.endsWith(path)) {
+        loadPage(path);
+      }
     });
 
     window.addEventListener('popstate', (e) => {
-      if (e.state?.url) loadPage(e.state.url, false);
+      if (e.state && e.state.url) loadPage(e.state.url, false);
     });
 
     if ('serviceWorker' in navigator) {
@@ -179,5 +247,5 @@
     }
   </script>
 </body>
-</html>
 
+</html>
