@@ -8,13 +8,13 @@
   "description": "JekyllとMWCで作ったSPA風PWA",
   "icons": [
     {
-      "src": "https://fonts.gstatic.com/s/i/short-term/release/googlestars/home/v4/512px.png",
+      "src": "./icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://fonts.gstatic.com/s/i/short-term/release/googlestars/home/v4/512px.png",
+      "src": "./icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
