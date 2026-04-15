@@ -1,0 +1,64 @@
+---
+layout: default
+title: Tetris
+---
+
+<div id="tetris-container" style="display:flex;justify-content:center;align-items:center;height:100%;">
+  <canvas id="game" style="border:1px solid #ccc;max-width:100%;height:auto;"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+let COLS = 10;
+let ROWS = 20;
+let BLOCK = 30;
+
+function resize() {
+  const size = Math.min(window.innerWidth, 400);
+  BLOCK = Math.floor(size / COLS);
+  canvas.width = COLS * BLOCK;
+  canvas.height = ROWS * BLOCK;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+
+function drawCell(x,y,color){
+  ctx.fillStyle = color;
+  ctx.fillRect(x*BLOCK,y*BLOCK,BLOCK-1,BLOCK-1);
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let y=0;y<ROWS;y++){
+    for(let x=0;x<COLS;x++){
+      if(board[y][x]) drawCell(x,y,'#6750a4');
+    }
+  }
+}
+
+let piece = {x:4,y:0};
+
+function update(){
+  piece.y++;
+  if(piece.y>=ROWS){
+    piece.y=0;
+  }
+  draw();
+  drawCell(piece.x,piece.y,'#ff5252');
+}
+
+setInterval(update,500);
+
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft') piece.x--;
+  if(e.key==='ArrowRight') piece.x++;
+});
+
+canvas.addEventListener('touchstart',()=>{
+  piece.x = (piece.x+1)%COLS;
+});
+</script>
