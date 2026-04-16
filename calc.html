@@ -1,0 +1,164 @@
+---
+layout: default
+title: M3 Calculator
+---
+
+<style>
+  /* 親要素の制約を解除して画面いっぱいに広げる */
+  #app-shell {
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .calc-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 64px - 80px); /* Header(64px)とNav(80px)を除いた高さ */
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: 8px;
+  }
+
+  /* 表示部：上に固定 */
+  .display-area {
+    flex: 0 0 20%; /* 画面の20%を表示に割り当て */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding: 16px;
+    background: var(--md-sys-color-surface-container-highest, #f0eefa);
+    border-radius: 28px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .formula {
+    font-size: 1rem;
+    color: var(--md-sys-color-on-surface-variant);
+    min-height: 1.5rem;
+  }
+
+  .result {
+    font-size: 2.5rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+  }
+
+  /* ボタンエリア：残りのスペースを全部使う */
+  .keypad {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  md-filled-button, md-filled-tonal-button, md-outlined-button {
+    --md-filled-button-container-shape: 16px;
+    height: 100%;
+    width: 100%;
+    font-size: 1.2rem;
+  }
+
+  /* 特殊ボタンの色調整 */
+  .operator {
+    --md-filled-tonal-button-container-color: var(--md-sys-color-secondary-container);
+  }
+
+  .equal {
+    --md-filled-button-container-color: var(--md-sys-color-primary);
+    grid-column: span 1;
+  }
+</style>
+
+<div class="calc-container">
+  <div class="display-area">
+    <div class="formula" id="calc-formula"></div>
+    <div class="result" id="calc-display">0</div>
+  </div>
+
+  <div class="keypad">
+    <md-outlined-button onclick="clearCalc()">C</md-outlined-button>
+    <md-outlined-button onclick="appendOp('/')">/</md-outlined-button>
+    <md-outlined-button onclick="appendOp('*')">×</md-outlined-button>
+    <md-outlined-button onclick="backspace()"><md-icon>backspace</md-icon></md-outlined-button>
+
+    <md-filled-tonal-button onclick="appendNum('7')">7</md-filled-tonal-button>
+    <md-filled-tonal-button onclick="appendNum('8')">8</md-filled-tonal-button>
+    <md-filled-tonal-button onclick="appendNum('9')">9</md-filled-tonal-button>
+    <md-filled-button class="operator" onclick="appendOp('-')">-</md-filled-button>
+
+    <md-filled-tonal-button onclick="appendNum('4')">4</md-filled-tonal-button>
+    <md-filled-tonal-button onclick="appendNum('5')">5</md-filled-tonal-button>
+    <md-filled-tonal-button onclick="appendNum('6')">6</md-filled-tonal-button>
+    <md-filled-button class="operator" onclick="appendOp('+')">+</md-filled-button>
+
+    <md-filled-tonal-button onclick="appendNum('1')">1</md-filled-tonal-button>
+    <md-filled-tonal-button onclick="appendNum('2')">2</md-filled-tonal-button>
+    <md-filled-tonal-button onclick="appendNum('3')">3</md-filled-tonal-button>
+    <md-filled-button class="equal" style="grid-row: span 2;" onclick="calculate()">=</md-filled-button>
+
+    <md-filled-tonal-button style="grid-column: span 2;" onclick="appendNum('0')">0</md-filled-tonal-button>
+    <md-filled-tonal-button onclick="appendNum('.')">.</md-filled-tonal-button>
+  </div>
+</div>
+
+<script>
+  let currentInput = '0';
+  let formula = '';
+  const displayEl = document.getElementById('calc-display');
+  const formulaEl = document.getElementById('calc-formula');
+
+  function updateDisplay() {
+    displayEl.innerText = currentInput;
+    formulaEl.innerText = formula;
+  }
+
+  function appendNum(num) {
+    if (currentInput === '0' && num !== '.') {
+      currentInput = num;
+    } else {
+      currentInput += num;
+    }
+    updateDisplay();
+  }
+
+  function appendOp(op) {
+    formula = currentInput + ' ' + op + ' ';
+    currentInput = '0';
+    updateDisplay();
+  }
+
+  function clearCalc() {
+    currentInput = '0';
+    formula = '';
+    updateDisplay();
+  }
+
+  function backspace() {
+    if (currentInput.length > 1) {
+      currentInput = currentInput.slice(0, -1);
+    } else {
+      currentInput = '0';
+    }
+    updateDisplay();
+  }
+
+  function calculate() {
+    try {
+      const fullExpression = formula + currentInput;
+      // 簡易的なeval（実運用では安全なパーサー推奨）
+      const result = eval(fullExpression.replace('×', '*'));
+      formula = fullExpression + ' =';
+      currentInput = String(result);
+      updateDisplay();
+    } catch (e) {
+      currentInput = 'Error';
+      updateDisplay();
+    }
+  }
+</script>
