@@ -1,83 +1,84 @@
 ---
 layout: default
-title: Simply Calculator
+title: M3 Calculator
 ---
 
 <style>
-  /* 親要素の制約を解除して画面いっぱいに広げる */
+  /* 親要素の余計な余白を完全に消して、画面に密着させる */
   #app-shell {
     padding: 0 !important;
+    margin: 0 !important;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* 子要素の溢れを完全にシャットアウト */
+    height: calc(100vh - 64px - 80px); /* 厳密にヘッダーとナビの間を計算 */
+    overflow: hidden; 
   }
 
   .calc-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 64px - 80px); /* Header(64px)とNav(80px)を除いた高さ */
+    /* 親の#app-shellの高さ100%を使い切る */
+    height: 100%;
     width: 100%;
     max-width: 600px;
     margin: 0 auto;
     box-sizing: border-box;
-    padding: 8px;
+    padding: 12px; /* 周囲に少しだけ余裕を持たせる */
   }
 
-  /* 表示部：上に固定、溢れを絶対に防止 */
+  /* 表示部：高さを固定せず、全体のバランスで決める */
   .display-area {
-    flex: 0 0 20%; /* 画面の20%を表示に割り当て */
+    flex: 0 0 18%; /* 全体の18%程度に抑えてボタンのスペースを確保 */
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     align-items: flex-end;
-    padding: 16px;
+    padding: 12px 16px;
     background: var(--md-sys-color-surface-container-highest, #f0eefa);
-    border-radius: 28px;
-    margin-bottom: 8px;
-    overflow: hidden; /* 文字溢れを防ぐ */
+    border-radius: 24px;
+    margin-bottom: 12px;
+    overflow: hidden;
   }
 
   .formula {
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: var(--md-sys-color-on-surface-variant);
-    min-height: 1.5rem;
+    min-height: 1.2rem;
   }
 
-  /* 結果表示：フォントサイズはJSで動的に制御 */
   .result {
-    font-size: 2.5rem; /* デフォルトサイズ（JSで上書きされる） */
+    font-size: 2.2rem;
     font-weight: 500;
     color: var(--md-sys-color-on-surface);
-    white-space: nowrap; /* 改行しない */
-    display: block;
+    white-space: nowrap;
     width: 100%;
     text-align: right;
   }
 
-  /* ボタンエリア：残りのスペースを全部使う */
+  /* ボタンエリア：ここが「突き抜けない」ように1frで配分 */
   .keypad {
-    flex: 1;
+    flex: 1; /* 残りの高さを全部使う */
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(5, 1fr);
     gap: 8px;
+    min-height: 0; /* Gridの突き抜け防止の魔法のプロパティ */
   }
 
   md-filled-button, md-filled-tonal-button, md-outlined-button {
     --md-filled-button-container-shape: 16px;
     height: 100%;
     width: 100%;
-    font-size: 1.2rem;
+    /* 画面が小さい時でも文字がはみ出ないように少し小さめ */
+    font-size: 1.1rem;
   }
 
-  /* 特殊ボタンの色調整 */
   .operator {
     --md-filled-tonal-button-container-color: var(--md-sys-color-secondary-container);
   }
 
   .equal {
     --md-filled-button-container-color: var(--md-sys-color-primary);
-    grid-column: span 1;
   }
 </style>
 
@@ -120,13 +121,10 @@ title: Simply Calculator
   const formulaEl = document.getElementById('calc-formula');
   const displayAreaEl = document.getElementById('calc-display-area');
 
-  // フォントサイズを自動調整する関数（追加）
   function fitFontSize() {
-    let fontSize = 2.5; // 初期サイズ (rem)
+    let fontSize = 2.2; 
     displayEl.style.fontSize = fontSize + 'rem';
-
-    // 文字が溢れている間、サイズを小さくしていく
-    while (displayEl.scrollWidth > displayAreaEl.clientWidth - 32 && fontSize > 1) { // 32はpadding分
+    while (displayEl.scrollWidth > displayAreaEl.clientWidth - 32 && fontSize > 0.8) {
       fontSize -= 0.1;
       displayEl.style.fontSize = fontSize + 'rem';
     }
@@ -135,15 +133,12 @@ title: Simply Calculator
   function updateDisplay() {
     displayEl.innerText = currentInput;
     formulaEl.innerText = formula;
-    fitFontSize(); // 画面更新後に文字サイズを調整
+    fitFontSize();
   }
 
   function appendNum(num) {
-    if (currentInput === '0' && num !== '.') {
-      currentInput = num;
-    } else {
-      currentInput += num;
-    }
+    if (currentInput === '0' && num !== '.') currentInput = num;
+    else currentInput += num;
     updateDisplay();
   }
 
@@ -160,20 +155,14 @@ title: Simply Calculator
   }
 
   function backspace() {
-    if (currentInput.length > 1) {
-      currentInput = currentInput.slice(0, -1);
-    } else {
-      currentInput = '0';
-    }
+    currentInput = currentInput.length > 1 ? currentInput.slice(0, -1) : '0';
     updateDisplay();
   }
 
   function calculate() {
     try {
-      const fullExpression = formula + currentInput;
-      // 簡易的なeval（実運用では安全なパーサー推奨）
-      const result = eval(fullExpression.replace('×', '*'));
-      formula = fullExpression + ' =';
+      const result = eval((formula + currentInput).replace('×', '*'));
+      formula = formula + currentInput + ' =';
       currentInput = String(result);
       updateDisplay();
     } catch (e) {
@@ -181,7 +170,5 @@ title: Simply Calculator
       updateDisplay();
     }
   }
-
-  // 画面ロード時に一度実行
   updateDisplay();
 </script>
