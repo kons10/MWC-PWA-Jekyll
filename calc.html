@@ -1,6 +1,6 @@
 ---
 layout: default
-title: M3 Calculator
+title: Simply Calculator
 ---
 
 <style>
@@ -9,6 +9,7 @@ title: M3 Calculator
     padding: 0 !important;
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* 子要素の溢れを完全にシャットアウト */
   }
 
   .calc-container {
@@ -22,7 +23,7 @@ title: M3 Calculator
     padding: 8px;
   }
 
-  /* 表示部：上に固定 */
+  /* 表示部：上に固定、溢れを絶対に防止 */
   .display-area {
     flex: 0 0 20%; /* 画面の20%を表示に割り当て */
     display: flex;
@@ -33,7 +34,7 @@ title: M3 Calculator
     background: var(--md-sys-color-surface-container-highest, #f0eefa);
     border-radius: 28px;
     margin-bottom: 8px;
-    overflow: hidden;
+    overflow: hidden; /* 文字溢れを防ぐ */
   }
 
   .formula {
@@ -42,10 +43,15 @@ title: M3 Calculator
     min-height: 1.5rem;
   }
 
+  /* 結果表示：フォントサイズはJSで動的に制御 */
   .result {
-    font-size: 2.5rem;
+    font-size: 2.5rem; /* デフォルトサイズ（JSで上書きされる） */
     font-weight: 500;
     color: var(--md-sys-color-on-surface);
+    white-space: nowrap; /* 改行しない */
+    display: block;
+    width: 100%;
+    text-align: right;
   }
 
   /* ボタンエリア：残りのスペースを全部使う */
@@ -76,7 +82,7 @@ title: M3 Calculator
 </style>
 
 <div class="calc-container">
-  <div class="display-area">
+  <div class="display-area" id="calc-display-area">
     <div class="formula" id="calc-formula"></div>
     <div class="result" id="calc-display">0</div>
   </div>
@@ -112,10 +118,24 @@ title: M3 Calculator
   let formula = '';
   const displayEl = document.getElementById('calc-display');
   const formulaEl = document.getElementById('calc-formula');
+  const displayAreaEl = document.getElementById('calc-display-area');
+
+  // フォントサイズを自動調整する関数（追加）
+  function fitFontSize() {
+    let fontSize = 2.5; // 初期サイズ (rem)
+    displayEl.style.fontSize = fontSize + 'rem';
+
+    // 文字が溢れている間、サイズを小さくしていく
+    while (displayEl.scrollWidth > displayAreaEl.clientWidth - 32 && fontSize > 1) { // 32はpadding分
+      fontSize -= 0.1;
+      displayEl.style.fontSize = fontSize + 'rem';
+    }
+  }
 
   function updateDisplay() {
     displayEl.innerText = currentInput;
     formulaEl.innerText = formula;
+    fitFontSize(); // 画面更新後に文字サイズを調整
   }
 
   function appendNum(num) {
@@ -161,4 +181,7 @@ title: M3 Calculator
       updateDisplay();
     }
   }
+
+  // 画面ロード時に一度実行
+  updateDisplay();
 </script>
