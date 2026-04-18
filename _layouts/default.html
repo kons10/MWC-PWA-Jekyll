@@ -154,10 +154,10 @@
 
   <nav>
     <md-tabs id="bottom-nav">
-      <md-primary-tab id="nav-home" data-path="{{ '/index.html' | relative_url }}">
+      <md-primary-tab id="nav-home" onclick="loadPage('settings.html')">
         <md-icon slot="icon">home</md-icon>Home
       </md-primary-tab>
-      <md-primary-tab id="nav-settings" data-path="{{ '/settings.html' | relative_url }}">
+      <md-primary-tab id="nav-settings" onclick="loadPage('settings.html')">
         <md-icon slot="icon">settings</md-icon>Settings
       </md-primary-tab>
     </md-tabs>
