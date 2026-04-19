@@ -141,12 +141,14 @@
 
   <nav>
     <md-tabs id="bottom-nav">
-      <md-primary-tab id="nav-home" href="/" onclick="event.preventDefault(); loadPage('/')">
-        <md-icon slot="icon">home</md-icon>Home
+      {% for item in site.nav_items %}
+      <md-primary-tab
+        id="nav-{{ item.label | downcase }}"
+        href="{{ item.href }}"
+        onclick="event.preventDefault(); loadPage('{{ item.href }}')">
+        <md-icon slot="icon">{{ item.icon }}</md-icon>{{ item.label }}
       </md-primary-tab>
-      <md-primary-tab id="nav-settings" href="/settings.html" onclick="event.preventDefault(); loadPage('/settings.html')">
-        <md-icon slot="icon">settings</md-icon>Settings
-      </md-primary-tab>
+      {% endfor %}
     </md-tabs>
   </nav>
 
@@ -194,7 +196,10 @@
 
     function updateTabState(url) {
       const path = new URL(url, window.location.origin).pathname;
-      tabs.activeTabIndex = path.includes('settings') ? 1 : 0;
+      const tabEls = tabs.querySelectorAll('md-primary-tab');
+      tabEls.forEach((tab, i) => {
+        if (tab.getAttribute('href') === path) tabs.activeTabIndex = i;
+      });
     }
 
     window.addEventListener('popstate', (e) => {
