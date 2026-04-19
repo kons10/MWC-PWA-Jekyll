@@ -157,7 +157,7 @@
       <md-primary-tab id="nav-home" onclick="loadPage('/')">
         <md-icon slot="icon">home</md-icon>Home
       </md-primary-tab>
-      <md-primary-tab id="nav-settings" onclick="loadPage('settings.html')">
+      <md-primary-tab id="nav-settings" onclick="loadPage('settings')">
         <md-icon slot="icon">settings</md-icon>Settings
       </md-primary-tab>
     </md-tabs>
@@ -214,7 +214,7 @@
 
     function updateTabState(url) {
       const path = new URL(url, window.location.origin).pathname;
-      tabs.activeTabIndex = path.includes('settings.html') ? 1 : 0;
+      tabs.activeTabIndex = path.includes('settings') ? 1 : 0;
     }
 
     tabs.addEventListener('change', (e) => {
