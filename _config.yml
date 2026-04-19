@@ -1,0 +1,25 @@
+# サイトの基本情報
+title: MWC-PWA-Jekyll
+description: Jekyll × MWC で作るいろいろするサイト
+url: "https://app.zyn.f5.si/"
+baseurl: ""
+
+# コンテンツ設定
+markdown: kramdown
+highlighter: rouge
+permalink: pretty
+
+# Plugin
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+
+# ナビゲーションメニュー
+nav_items:
+  - label: Home
+    icon: home
+    href: /
+  - label: Settings
+    icon: settings
+    href: /settings.html
