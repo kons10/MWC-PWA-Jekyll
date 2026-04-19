@@ -1,8 +1,8 @@
 const CACHE_NAME = 'mwc-pwa-v1';
 const ASSETS = [
   './',
-  './index.html',
-  './settings.html',
+  './index',
+  './settings',
   './manifest.json'
 ];
 
