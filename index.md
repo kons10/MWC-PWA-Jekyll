@@ -16,7 +16,7 @@ title: Home
     下のリロードなし遷移を試してみてね。
   </p>
 
-  <md-filled-button onclick="loadPage('settings.html')">
+  <md-filled-button onclick="loadPage('settings')">
     設定ページへ移動
   </md-filled-button>
 </div>
