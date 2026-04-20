@@ -4,9 +4,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title }} | MWC PWA</title>
+  
   {% seo %}
-
-  <link rel="manifest" href="{{ '/manifest.json' | relative_url }}">
+  
   <meta name="theme-color" content="#6750a4">
 
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="preload" onload="this.onload=null;this.rel='stylesheet'" />
@@ -15,7 +16,6 @@
   <script type="module">
     import 'https://esm.run/@material/web/all.js';
 
-    // 初回読み込み完了時の処理
     window.addEventListener('load', () => {
       const splash = document.getElementById('splash-screen');
       if (splash) {
@@ -42,14 +42,12 @@
       overflow: hidden;
     }
 
-    /* ハイドレーション待ちの制御 */
     .is-loading-mwc md-tabs,
     .is-loading-mwc md-icon-button,
     .is-loading-mwc md-circular-progress {
       visibility: hidden;
     }
 
-    /* 起動画面 (X風スプラッシュ) */
     #splash-screen {
       position: fixed;
       top: 0;
@@ -71,18 +69,10 @@
     }
 
     @keyframes pulse {
-
-      0%,
-      100% {
-        transform: scale(1);
-      }
-
-      50% {
-        transform: scale(1.1);
-      }
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
     }
 
-    /* ページ遷移用ローディング画面 */
     #page-loader {
       position: absolute;
       top: 0;
@@ -90,7 +80,6 @@
       width: 100%;
       height: 100%;
       display: none;
-      /* 通常は非表示 */
       justify-content: center;
       align-items: center;
       background: rgba(254, 247, 255, 0.7);
@@ -132,7 +121,7 @@
 
   <!-- 起動画面 -->
   <div id="splash-screen">
-    MD
+    <span class="splash-logo material-symbols-outlined">web</span>
   </div>
 
   <header>
@@ -142,7 +131,6 @@
   </header>
 
   <main id="app-shell">
-    <!-- ローディングぐるぐる -->
     <div id="page-loader">
       <md-circular-progress four-color indeterminate></md-circular-progress>
     </div>
@@ -154,12 +142,13 @@
 
   <nav>
     <md-tabs id="bottom-nav">
-      <md-primary-tab id="nav-home" onclick="loadPage('/')">
-        <md-icon slot="icon">home</md-icon>Home
+      {% for item in site.nav_items %}
+      <md-primary-tab
+        id="nav-{{ item.label | downcase }}"
+        href="{{ item.href }}">
+        <md-icon slot="icon">{{ item.icon }}</md-icon>{{ item.label }}
       </md-primary-tab>
-      <md-primary-tab id="nav-settings" onclick="loadPage('settings')">
-        <md-icon slot="icon">settings</md-icon>Settings
-      </md-primary-tab>
+      {% endfor %}
     </md-tabs>
   </nav>
 
@@ -170,8 +159,6 @@
     const tabs = document.getElementById('bottom-nav');
 
     async function loadPage(url, push = true) {
-      // 読み込み中状態にする
-      document.body.classList.add('navigating');
       loader.style.display = 'flex';
 
       try {
@@ -180,12 +167,9 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(text, 'text/html');
 
-        // 新しいページから中身を抽出
         const newContent = doc.querySelector('#app-shell-content');
         const newTitle = doc.querySelector('title');
 
-        // 通信時間をシミュレートして「ぐるぐる」をしっかり見せる場合はここを調整
-        // 今回は完了次第すぐに表示
         if (newContent) {
           content.innerHTML = newContent.innerHTML;
           if (newTitle) document.title = newTitle.innerText;
@@ -193,7 +177,6 @@
           if (push) history.pushState({ url }, '', url);
           updateTabState(url);
 
-          // インラインスクリプトの再実行
           content.querySelectorAll('script').forEach(oldScript => {
             const newScript = document.createElement('script');
             newScript.textContent = oldScript.textContent;
@@ -201,29 +184,23 @@
           });
         }
       } catch (e) {
-        console.error("Navigation Error:", e);
-        window.location.href = url; // 失敗時は強制リロード
+        console.error('Navigation Error:', e);
+        // TODO: md-snackbar等でユーザーにエラーを通知する
+        window.location.href = url;
       } finally {
-        // 読み込み完了
         setTimeout(() => {
           loader.style.display = 'none';
-          document.body.classList.remove('navigating');
         }, 100);
       }
     }
 
     function updateTabState(url) {
       const path = new URL(url, window.location.origin).pathname;
-      tabs.activeTabIndex = path.includes('settings') ? 1 : 0;
+      const tabEls = tabs.querySelectorAll('md-primary-tab');
+      tabEls.forEach((tab, i) => {
+        if (tab.getAttribute('href') === path) tabs.activeTabIndex = i;
+      });
     }
-
-    tabs.addEventListener('change', (e) => {
-      const path = e.target.activeTab.dataset.path;
-      // 現在のページと違う場合のみ遷移
-      if (!window.location.pathname.endsWith(path)) {
-        loadPage(path);
-      }
-    });
 
     window.addEventListener('popstate', (e) => {
       if (e.state && e.state.url) loadPage(e.state.url, false);
@@ -233,6 +210,29 @@
       navigator.serviceWorker.register("{{ '/sw.js' | relative_url }}");
     }
   </script>
+<script>
+  // タブがクリックされた時の処理をここでまとめて行う
+  tabs.addEventListener('click', (e) => {
+    // 1. クリックされた場所がどこか確認する（デバッグ用）
+    console.log("クリックされた要素:", e.target);
+
+    // クリックされた要素が md-primary-tab かどうかを探す
+    const tab = e.target.closest('md-primary-tab');
+    
+    if (tab) {
+      console.log("タブが押されました！行き先:", tab.getAttribute('href'));
+      
+      // ページ遷移の既定の動作を止める
+      e.preventDefault();
+      const url = tab.getAttribute('href');
+      
+      // loadPage 関数を呼び出す
+      loadPage(url);
+    } else {
+      console.log("タブ以外が押されました");
+    }
+  });
+</script>
 </body>
 
 </html>
